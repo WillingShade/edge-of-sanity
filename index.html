@@ -77,9 +77,8 @@
 <body>
   <a href="#maincontent" class="skip-link">Skip to main content</a>
 
-  <!-- Audio element: start muted to maximize autoplay success on browsers that allow muted autoplay.
-       Users can unmute using the accessible button. -->
-  <audio id="themeAudio" loop autoplay muted playsinline>
+  <!-- Audio element: attempt audible autoplay (best-effort). Will fall back to muted autoplay if browser blocks unmuted autoplay. -->
+  <audio id="themeAudio" loop autoplay playsinline preload="auto">
     <source src="edge_of_sanity_theme.mp3" type="audio/mpeg">
     Your browser does not support the audio element.
   </audio>
@@ -88,7 +87,7 @@
   <button id="audioToggle" aria-pressed="false" aria-label="Play ambient audio">PLAY AUDIO</button>
 
   <header>
-    <h1>EDGE OF SANITY</h1>
+    <h1 aria-hidden="true"></h1>
     <p>A psychological horror experience set within a fractured reality. You are not losing your mind. You are what remains of it.</p>
   </header>
 
@@ -173,16 +172,15 @@
     </section>
   </main>
 
- <footer>
-  <p style="margin:0">
-    Edge of Sanity © Tetrad Games — <a href="contact.html" style="color:inherit;text-decoration:underline">Contact</a>
-  </p>
-</footer>
+  <footer>
+    <p>Edge of Sanity © Tetrad Games — <a href="contact.html" style="color:inherit;text-decoration:underline">Contact</a></p>
+  </footer>
 
   <script>
     (function(){
       const audio = document.getElementById('themeAudio');
       const toggle = document.getElementById('audioToggle');
+      const STORAGE_KEY = 'eos_audio_allowed_v1';
 
       // Helper to update button text and aria state
       function updateButton(){
@@ -192,30 +190,85 @@
         toggle.setAttribute('aria-label', isPlaying ? 'Pause ambient audio' : 'Play ambient audio');
       }
 
-      // Start: try to play muted to increase autoplay success, but reflect UI properly
-      audio.volume = 0.6;
-      audio.muted = true; // start muted for autoplay compatibility
-      audio.play().catch(()=> {
-        // If autoplay fails, audio remains paused & muted. UI will show PLAY AUDIO.
-      }).finally(()=>{
-        updateButton();
-      });
+      // Attempt unmuted autoplay if previously allowed; otherwise best-effort unmuted then fallback to muted autoplay.
+      async function initPlayback(){
+        audio.volume = 0.6;
 
-      // Toggle behavior: first click will unmute and play (if paused), subsequent clicks pause/play.
+        const previouslyAllowed = localStorage.getItem(STORAGE_KEY) === 'true';
+
+        // Try unmuted play first if previously allowed
+        if (previouslyAllowed){
+          audio.muted = false;
+          try{
+            await audio.play();
+            // success — keep allowed
+            updateButton();
+            return;
+          }catch(err){
+            console.warn('Previously allowed autoplay failed:', err);
+            // fallthrough to attempt muted autoplay and gesture fallback
+          }
+        }
+
+        // Try unmuted play once (first attempt) — some browsers honor it when user has high engagement
+        audio.muted = false;
+        try{
+          await audio.play();
+          // succeeded without a gesture: remember choice
+          localStorage.setItem(STORAGE_KEY, 'true');
+          updateButton();
+          return;
+        }catch(err){
+          console.warn('Unmuted autoplay blocked:', err);
+          // fallback: play muted to at least start audio silently
+          try{
+            audio.muted = true;
+            await audio.play();
+            updateButton();
+          }catch(e){
+            // even muted autoplay failed; audio will remain paused until user gesture
+            console.warn('Muted autoplay also failed:', e);
+            updateButton();
+          }
+
+          // Set up a one-time gesture to unmute/play and remember the user's implicit permission
+          const grantPermission = async () => {
+            try{
+              audio.muted = false;
+              await audio.play();
+              localStorage.setItem(STORAGE_KEY, 'true');
+              updateButton();
+            }catch(err){
+              console.warn('Gesture play failed:', err);
+              // keep muted or paused
+            } finally {
+              window.removeEventListener('click', grantPermission);
+              window.removeEventListener('keydown', grantPermission);
+              window.removeEventListener('touchstart', grantPermission);
+            }
+          };
+
+          window.addEventListener('click', grantPermission, { once: true });
+          window.addEventListener('keydown', grantPermission, { once: true });
+          window.addEventListener('touchstart', grantPermission, { once: true });
+        }
+      }
+
+      // Toggle behavior: unmute+play on first unmute, set storage; subsequent clicks pause/play
       toggle.addEventListener('click', async () => {
         try{
-          // If currently muted, unmute and ensure playback
           if (audio.muted){
             audio.muted = false;
             await audio.play();
+            localStorage.setItem(STORAGE_KEY, 'true');
           } else if (audio.paused){
             await audio.play();
           } else {
             audio.pause();
           }
         } catch (err){
-          // If play fails (due to policy), ensure audio stays muted/paused and notify via console
           console.warn('Audio playback failed:', err);
+          // If play fails, revert to muted paused state to avoid browser permission popups
           audio.muted = true;
           audio.pause();
         } finally {
@@ -227,6 +280,13 @@
       audio.addEventListener('play', updateButton);
       audio.addEventListener('pause', updateButton);
       audio.addEventListener('volumechange', updateButton);
+
+      // Initialize playback on load
+      if (document.readyState === 'loading'){
+        document.addEventListener('DOMContentLoaded', initPlayback);
+      } else {
+        initPlayback();
+      }
 
       // Allow keyboard focus to jump to main content after skip link
       document.querySelector('.skip-link').addEventListener('click', (e)=>{
