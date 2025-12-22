@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Edge of Sanity</title>
+
+  <style>
+    :root{
+      --bg-top:#1a1a1a;
+      --bg-bottom:#000;
+      --muted-text:#aaa;
+      --panel-bg: rgba(255,255,255,0.05);
+      --panel-border: rgba(255,255,255,0.1);
+      --focus: #ffcf33;
+    }
+
+    /* Basic layout */
+    html,body{height:100%;margin:0;font-family:Arial,Helvetica,sans-serif;background:radial-gradient(circle at top,var(--bg-top),var(--bg-bottom));color:#e0e0e0;line-height:1.4;}
+    a{color:inherit}
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+    /* Skip link */
+    .skip-link{position:absolute;left:0;top:-40px;background:#000;color:#fff;padding:0.5rem 1rem;z-index:10000;transition:top .15s;}
+    .skip-link:focus{top:8px;outline:2px solid var(--focus)}
+
+    header{
+      min-height:100vh;
+      background:linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.9)), url('cover.png') center/cover no-repeat;
+      display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:2rem;
+    }
+    header h1{font-size:clamp(2rem,6vw,4rem);letter-spacing:0.15em;margin:0 0 1rem}
+    header p{max-width:700px;font-size:clamp(1rem,2.2vw,1.2rem);margin:0}
+
+    main{padding:4rem 2rem;max-width:1000px;margin:auto}
+    section{margin-bottom:2rem}
+    h2{letter-spacing:0.1em;margin-bottom:1rem}
+    .divider{width:100%;height:1px;background:linear-gradient(to right,transparent,#666,transparent);margin:3rem 0}
+
+    .emotion-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:2rem}
+    .emotion{background:var(--panel-bg);padding:1.5rem;border:1px solid var(--panel-border)}
+
+    /* Media gallery */
+    .media-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.5rem}
+    .card{background:var(--panel-bg);border:1px solid var(--panel-border);padding:1rem}
+    .glitch-img{position:relative;overflow:hidden}
+    .glitch-img img{display:block;width:100%;height:auto;transition:transform .3s ease,filter .3s ease;max-height:360px;object-fit:cover}
+    .glitch-img::before,.glitch-img::after{content:'';position:absolute;inset:0;opacity:0;pointer-events:none}
+
+    /* Button */
+    #audioToggle{
+      position:fixed;top:20px;right:20px;background:rgba(0,0,0,0.6);color:#e0e0e0;border:1px solid rgba(255,255,255,0.2);padding:0.5rem 1rem;cursor:pointer;z-index:1000;
+      transition:transform .1s;
+    }
+    #audioToggle:active{transform:scale(.98)}
+    #audioToggle:focus{outline:3px solid var(--focus);outline-offset:3px}
+
+    /* reduced motion: respect user preference */
+    @media (prefers-reduced-motion: reduce){
+      .glitch-img img{transition:none}
+      .glitch-img:hover img{transform:none;filter:none}
+      .glitch-img::before,.glitch-img::after{animation:none;opacity:0}
+    }
+
+    /* desktop hover glitch (small and subtle) */
+    @keyframes glitchShift{0%{transform:translate(0,0)}25%{transform:translate(-2px,2px)}50%{transform:translate(2px,-2px)}75%{transform:translate(-1px,-1px)}100%{transform:translate(0,0)}}
+    .glitch-img:hover::before{opacity:0.18;background:rgba(255,215,0,0.08);animation:glitchShift .15s infinite}
+    .glitch-img:hover::after{opacity:0.12;background:rgba(255,0,0,0.04);animation:glitchShift .2s infinite reverse}
+    .glitch-img:hover img{transform:scale(1.02);filter:contrast(1.15) brightness(1.08)}
+
+    footer{padding:2rem;text-align:center;font-size:.9rem;background:#000;color:#777}
+
+    /* Focus-visible support */
+    :focus{outline-offset:3px}
+  </style>
+</head>
+<body>
+  <a href="#maincontent" class="skip-link">Skip to main content</a>
+
+  <!-- Audio element: attempt audible autoplay (best-effort). Will fall back to muted autoplay if browser blocks unmuted autoplay. -->
+  <audio id="themeAudio" loop autoplay playsinline preload="auto">
+    <source src="edge_of_sanity_theme.mp3" type="audio/mpeg">
+    Your browser does not support the audio element.
+  </audio>
+
+  <!-- Accessible toggle: aria-pressed reflects play state; aria-label explains action -->
+  <button id="audioToggle" aria-pressed="false" aria-label="Play ambient audio">PLAY AUDIO</button>
+
+  <header>
+    <h1 aria-hidden="true"></h1>
+    <p>A psychological horror experience set within a fractured reality. You are not losing your mind. You are what remains of it.</p>
+  </header>
+
+  <main id="maincontent" tabindex="-1">
+    <section aria-labelledby="worldHeading">
+      <h2 id="worldHeading">THE WORLD</h2>
+      <p>Reality is broken. Buildings float. Trees grow upside down. The sky is torn open by glowing rifts. What begins as a normal workplace slowly reveals itself as something deeply wrong. The world degrades alongside the mind that contains it.</p>
+    </section>
+
+    <div class="divider" role="separator" aria-hidden="true"></div>
+
+    <section aria-labelledby="premiseHeading">
+      <h2 id="premiseHeading">THE PREMISE</h2>
+      <p>You work shifts at a quiet asylum. You check on patients. You clean, organize paperwork, and perform routine tasks. Between shifts, you return to your apartment, listening to the radio, writing in your journal.</p>
+      <p>Over time, the world fractures. Notes become incoherent. Broadcasts dissolve into noise. Patients begin to change. At the climax, the truth is revealed: you are trapped within your own mind, the last fragment of a shattered sanity.</p>
+    </section>
+
+    <div class="divider" role="separator" aria-hidden="true"></div>
+
+    <section aria-labelledby="emotionsHeading">
+      <h2 id="emotionsHeading">THE EMOTIONS</h2>
+      <div class="emotion-grid">
+        <div class="emotion"><h3>Joy</h3><p>A smiling man whose happiness grows grotesque. Laughter becomes uncontrollable. Joy turns predatory.</p></div>
+        <div class="emotion"><h3>Fear</h3><p>Constant anxiety that escalates into terror. Shrieking, panic, and overwhelming dread.</p></div>
+        <div class="emotion"><h3>Sadness</h3><p>A quiet despair that weighs on the world itself. The environment bends beneath its sorrow.</p></div>
+        <div class="emotion"><h3>Hope</h3><p>Never seen. Only heard through calls, notes, and messages. When Hope is gone, nothing holds the world together.</p></div>
+      </div>
+    </section>
+
+    <div class="divider" role="separator" aria-hidden="true"></div>
+
+    <section aria-labelledby="mediaHeading">
+      <h2 id="mediaHeading">MEDIA GALLERY</h2>
+      <p>A glimpse into the fractured world of Edge of Sanity. Visuals degrade alongside the narrative, revealing a reality that is slowly tearing itself apart.</p>
+
+      <div class="media-grid" aria-hidden="false">
+        <div class="card">
+          <div class="glitch-img">
+            <img loading="lazy" decoding="async" src="screenshot_01.png" alt="Floating asylum suspended in a broken sky" width="1200" height="675">
+          </div>
+          <p style="font-size:0.9rem;color:var(--muted-text)">The asylum suspended in a broken sky.</p>
+        </div>
+
+        <div class="card">
+          <div class="glitch-img">
+            <img loading="lazy" decoding="async" src="cover.png" alt="Distorted asylum interior with warped corridors" width="1200" height="675">
+          </div>
+          <p style="font-size:0.9rem;color:var(--muted-text)">Reality begins to fracture inside the asylum.</p>
+        </div>
+
+        <div class="card">
+          <div class="glitch-img">
+            <img loading="lazy" decoding="async" src="screenshot_02.png" alt="An emotion manifesting as a physical presence" width="1200" height="675">
+          </div>
+          <p style="font-size:0.9rem;color:var(--muted-text)">An emotion pushed beyond its breaking point.</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="divider" role="separator" aria-hidden="true"></div>
+
+    <section aria-labelledby="designHeading">
+      <h2 id="designHeading">DESIGN PHILOSOPHY</h2>
+      <p>Edge of Sanity is built as a slow-burn psychological descent. There are no cheap scares. Horror emerges from routine, attachment, and loss. Visuals, sound, and narrative degrade together, creating an experience that feels unstable, fragmented, and deeply personal.</p>
+    </section>
+
+    <div class="divider" role="separator" aria-hidden="true"></div>
+
+    <section aria-labelledby="pressHeading">
+      <h2 id="pressHeading">PRESS KIT</h2>
+      <p><strong>Title:</strong> Edge of Sanity<br><strong>Genre:</strong> Psychological Horror<br><strong>Platform:</strong> PC<br><strong>Developer:</strong> Tetrad Games</p>
+      <p><strong>Description:</strong><br>Edge of Sanity is a slow-burn psychological horror game about routine, emotional decay, and fractured reality. Set within a shifting asylum that exists inside a broken mind, players perform mundane tasks while the world, its inhabitants, and their own perception unravel.</p>
+      <p><strong>Key Features:</strong></p>
+      <ul>
+        <li>Emotion-driven NPCs that evolve into threats</li>
+        <li>Environmental storytelling and reality fragmentation</li>
+        <li>Routine-based gameplay that turns unsettling over time</li>
+        <li>Minimalist horror with no reliance on jump scares</li>
+        <li>Atmospheric audio and visual degradation tied to narrative</li>
+      </ul>
+      <p><strong>Contact:</strong><br><em>Tetrad Games</em></p>
+    </section>
+  </main>
+
+  <footer>
+    <p>Edge of Sanity © Tetrad Games — <a href="contact.html" style="color:inherit;text-decoration:underline">Contact</a></p>
+  </footer>
+
+  <script>
+    (function(){
+      const audio = document.getElementById('themeAudio');
+      const toggle = document.getElementById('audioToggle');
+      const STORAGE_KEY = 'eos_audio_allowed_v1';
+
+      // Helper to update button text and aria state
+      function updateButton(){
+        const isPlaying = !audio.paused && !audio.muted;
+        toggle.setAttribute('aria-pressed', String(isPlaying));
+        toggle.textContent = isPlaying ? 'PAUSE AUDIO' : 'PLAY AUDIO';
+        toggle.setAttribute('aria-label', isPlaying ? 'Pause ambient audio' : 'Play ambient audio');
+      }
+
+      // Attempt unmuted autoplay if previously allowed; otherwise best-effort unmuted then fallback to muted autoplay.
+      async function initPlayback(){
+        audio.volume = 0.6;
+
+        const previouslyAllowed = localStorage.getItem(STORAGE_KEY) === 'true';
+
+        // Try unmuted play first if previously allowed
+        if (previouslyAllowed){
+          audio.muted = false;
+          try{
+            await audio.play();
+            // success — keep allowed
+            updateButton();
+            return;
+          }catch(err){
+            console.warn('Previously allowed autoplay failed:', err);
+            // fallthrough to attempt muted autoplay and gesture fallback
+          }
+        }
+
+        // Try unmuted play once (first attempt) — some browsers honor it when user has high engagement
+        audio.muted = false;
+        try{
+          await audio.play();
+          // succeeded without a gesture: remember choice
+          localStorage.setItem(STORAGE_KEY, 'true');
+          updateButton();
+          return;
+        }catch(err){
+          console.warn('Unmuted autoplay blocked:', err);
+          // fallback: play muted to at least start audio silently
+          try{
+            audio.muted = true;
+            await audio.play();
+            updateButton();
+          }catch(e){
+            // even muted autoplay failed; audio will remain paused until user gesture
+            console.warn('Muted autoplay also failed:', e);
+            updateButton();
+          }
+
+          // Set up a one-time gesture to unmute/play and remember the user's implicit permission
+          const grantPermission = async () => {
+            try{
+              audio.muted = false;
+              await audio.play();
+              localStorage.setItem(STORAGE_KEY, 'true');
+              updateButton();
+            }catch(err){
+              console.warn('Gesture play failed:', err);
+              // keep muted or paused
+            } finally {
+              window.removeEventListener('click', grantPermission);
+              window.removeEventListener('keydown', grantPermission);
+              window.removeEventListener('touchstart', grantPermission);
+            }
+          };
+
+          window.addEventListener('click', grantPermission, { once: true });
+          window.addEventListener('keydown', grantPermission, { once: true });
+          window.addEventListener('touchstart', grantPermission, { once: true });
+        }
+      }
+
+      // Toggle behavior: unmute+play on first unmute, set storage; subsequent clicks pause/play
+      toggle.addEventListener('click', async () => {
+        try{
+          if (audio.muted){
+            audio.muted = false;
+            await audio.play();
+            localStorage.setItem(STORAGE_KEY, 'true');
+          } else if (audio.paused){
+            await audio.play();
+          } else {
+            audio.pause();
+          }
+        } catch (err){
+          console.warn('Audio playback failed:', err);
+          // If play fails, revert to muted paused state to avoid browser permission popups
+          audio.muted = true;
+          audio.pause();
+        } finally {
+          updateButton();
+        }
+      });
+
+      // Sync UI when user manipulates via other controls or programmatically
+      audio.addEventListener('play', updateButton);
+      audio.addEventListener('pause', updateButton);
+      audio.addEventListener('volumechange', updateButton);
+
+      // Initialize playback on load
+      if (document.readyState === 'loading'){
+        document.addEventListener('DOMContentLoaded', initPlayback);
+      } else {
+        initPlayback();
+      }
+
+      // Allow keyboard focus to jump to main content after skip link
+      document.querySelector('.skip-link').addEventListener('click', (e)=>{
+        const m = document.getElementById('maincontent');
+        if (m) m.focus();
+      });
+    })();
+  </script>
+</body>
+</html>
