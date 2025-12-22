@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Contact — Edge of Sanity</title>
+  <style>
+    :root{
+      --bg-top:#1a1a1a;
+      --bg-bottom:#000;
+      --muted-text:#aaa;
+      --panel-bg: rgba(255,255,255,0.03);
+      --panel-border: rgba(255,255,255,0.06);
+      --focus: #ffcf33;
+    }
+    html,body{height:100%;margin:0;font-family:Arial,Helvetica,sans-serif;background:radial-gradient(circle at top,var(--bg-top),var(--bg-bottom));color:#e0e0e0;line-height:1.4;}
+    main{max-width:760px;margin:4rem auto;padding:2rem;background:var(--panel-bg);border:1px solid var(--panel-border);border-radius:8px;}
+    h1{margin:0 0 1rem;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:0.12em;text-align:center}
+    p.lead{color:var(--muted-text);text-align:center;margin-top:0}
+    form{display:grid;gap:0.75rem;margin-top:1rem}
+    label{font-size:.9rem}
+    input[type="text"], input[type="email"], textarea{
+      width:100%;padding:0.6rem;border-radius:6px;border:1px solid var(--panel-border);background:transparent;color:inherit;font:inherit;
+    }
+    textarea{min-height:150px;resize:vertical}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem}
+    button[type="submit"]{background:var(--focus);border:none;padding:0.6rem 1rem;border-radius:6px;color:#000;font-weight:600;cursor:pointer}
+    .status{margin-top:0.5rem;color:var(--muted-text);font-size:.95rem}
+    .hidden{display:none!important}
+    .small{font-size:0.85rem;color:var(--muted-text);text-align:center;margin-top:0.5rem}
+  </style>
+</head>
+<body>
+  <main role="main" aria-labelledby="contactHeading">
+    <h1 id="contactHeading">Contact</h1>
+    <p class="lead">Send a message about the project. I will receive messages at familyshade@gmail.com (see setup notes below).</p>
+
+    <form id="contactForm" method="POST" novalidate>
+      <!-- Replace the value of data-endpoint with your Formspree endpoint (recommended).
+           Example: https://formspree.io/f/abcd1234
+           If left blank, the form will fall back to opening the user's email client via mailto. -->
+      <input type="hidden" id="formEndpoint" value="">
+
+      <label for="name">Name</label>
+      <input id="name" name="name" type="text" required autocomplete="name" />
+
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" required autocomplete="email" />
+
+      <label for="subject">Subject</label>
+      <input id="subject" name="subject" type="text" required />
+
+      <label for="message">Message</label>
+      <textarea id="message" name="message" required></textarea>
+
+      <!-- Honeypot: bots may fill this; real users won't see it -->
+      <label class="hidden" aria-hidden="true"><input name="website" type="text" tabindex="-1" autocomplete="off" /></label>
+
+      <div style="display:flex;gap:.75rem;align-items:center">
+        <button type="submit" id="sendBtn">Send Message</button>
+        <div id="spinner" class="hidden" aria-hidden="true">Sending…</div>
+      </div>
+
+      <div id="status" class="status" role="status" aria-live="polite"></div>
+    </form>
+
+    <p class="small">
+      Notes: If you want the site to deliver messages directly to familyshade@gmail.com automatically, sign up for a form service (Formspree, Netlify Forms, etc.) or deploy a serverless endpoint that sends mail via a mail API (SendGrid/Mailgun). Instructions below.
+    </p>
+
+    <section aria-labelledby="setupHeading" style="margin-top:1.25rem">
+      <h2 id="setupHeading" style="font-size:1rem;margin:0 0 .5rem">Quick setup (recommended: Formspree)</h2>
+      <ol>
+        <li>Create a free Formspree account at <a href="https://formspree.io" style="color:inherit">formspree.io</a>.</li>
+        <li>Create a new form and copy the endpoint URL (looks like <code>https://formspree.io/f/yourFormId</code>).</li>
+        <li>Open this file and set the hidden input <code>#formEndpoint</code> value to that endpoint.</li>
+        <li>Formspree will validate submissions and can forward them to familyshade@gmail.com or you can view them in the Formspree dashboard.</li>
+      </ol>
+    </section>
+  </main>
+
+  <script>
+    (function(){
+      const form = document.getElementById('contactForm');
+      const endpointInput = document.getElementById('formEndpoint');
+      let endpoint = endpointInput.value && endpointInput.value.trim();
+      const sendBtn = document.getElementById('sendBtn');
+      const status = document.getElementById('status');
+      const spinner = document.getElementById('spinner');
+
+      function showStatus(msg, ok=true){
+        status.textContent = msg;
+        status.style.color = ok ? 'var(--muted-text)' : '#ff6b6b';
+      }
+
+      // Build a mailto fallback
+      function openMailClient(data){
+        const to = 'familyshade@gmail.com';
+        const subject = encodeURIComponent(data.subject || 'Contact from site');
+        let body = '';
+        if (data.name) body += 'Name: ' + data.name + '\\n';
+        if (data.email) body += 'Reply-to: ' + data.email + '\\n\\n';
+        body += (data.message || '');
+        const mailto = 'mailto:' + to + '?subject=' + subject + '&body=' + encodeURIComponent(body);
+        window.location.href = mailto;
+      }
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        status.textContent = '';
+        const fd = new FormData(form);
+
+        // Honeypot check
+        if (fd.get('website')) {
+          // bot detected — silently fail
+          showStatus('Message sent. Thank you.');
+          form.reset();
+          return;
+        }
+
+        const payload = {
+          name: fd.get('name'),
+          email: fd.get('email'),
+          subject: fd.get('subject'),
+          message: fd.get('message')
+        };
+
+        spinner.classList.remove('hidden');
+        sendBtn.disabled = true;
+
+        if (endpoint) {
+          // Try Formspree / static endpoint
+          try {
+            // Formspree accepts form-encoded or JSON depending on plan; use fetch with URLSearchParams
+            const res = await fetch(endpoint, {
+              method: 'POST',
+              headers: { 'Accept': 'application/json' },
+              body: new URLSearchParams(fd)
+            });
+            const resJson = await res.json().catch(()=>null);
+            if (res.ok) {
+              showStatus('Message sent. Thank you!');
+              form.reset();
+            } else {
+              // Show message from service if available
+              const msg = (resJson && (resJson.error || resJson.message)) ? resJson.error || resJson.message : 'Submission failed.';
+              showStatus(msg, false);
+            }
+          } catch (err) {
+            console.error('Submit error', err);
+            showStatus('Network error. Please try again or use your email client.', false);
+            // As fallback open mailto
+            // openMailClient(payload);
+          } finally {
+            spinner.classList.add('hidden');
+            sendBtn.disabled = false;
+          }
+        } else {
+          // No endpoint configured: fallback to mailto
+          spinner.classList.add('hidden');
+          sendBtn.disabled = false;
+          openMailClient(payload);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
