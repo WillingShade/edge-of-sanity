@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Contact — Edge of Sanity</title>
+  <title>Contact — Tetrad Games</title>
   <style>
     :root{
       --bg-top:#1a1a1a;
@@ -19,26 +19,25 @@
     p.lead{color:var(--muted-text);text-align:center;margin-top:0}
     form{display:grid;gap:0.75rem;margin-top:1rem}
     label{font-size:.9rem}
-    input[type="text"], input[type="email"], textarea{width:100%;padding:0.6rem;border-radius:6px;border:1px solid var(--panel-border);background:transparent;color:inherit;font:inherit;}
+    input[type="text"], input[type="email"], textarea{
+      width:100%;padding:0.6rem;border-radius:6px;
+      border:1px solid var(--panel-border);background:transparent;color:inherit;font:inherit;
+    }
     textarea{min-height:150px;resize:vertical}
-    .row{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem}
-    button[type="submit"]{background:var(--focus);border:none;padding:0.6rem 1rem;border-radius:6px;color:#000;font-weight:600;cursor:pointer}
+    button[type="submit"]{
+      background:var(--focus);border:none;padding:0.6rem 1rem;border-radius:6px;
+      color:#000;font-weight:600;cursor:pointer
+    }
     .status{margin-top:0.5rem;color:var(--muted-text);font-size:.95rem}
     .hidden{display:none!important}
-    .small{font-size:0.85rem;color:var(--muted-text);text-align:center;margin-top:0.5rem}
   </style>
 </head>
 <body>
   <main role="main" aria-labelledby="contactHeading">
-    <h1 id="contactHeading">Contact</h1>
-    <p class="lead">Send a message about the project. Messages will be delivered to familyshade@gmail.com via FormSubmit.co (free). If you prefer, the form will fall back to opening your mail client.</p>
+    <h1 id="contactHeading">Contact Tetrad Games</h1>
+    <p class="lead">For inquiries regarding our games, partnerships, or media requests, please use the form below. Your message will be delivered directly to the Tetrad Games team.</p>
 
-    <form id="contactForm" action="https://formsubmit.co/familyshade@gmail.com" method="POST" novalidate>
-      <!-- FormSubmit required hidden inputs -->
-      <input type="hidden" name="_subject" value="Contact form submission">
-      <input type="hidden" name="_captcha" value="false">
-      <input type="hidden" name="_next" value="/thank-you.html">
-
+    <form id="contactForm" novalidate>
       <label for="name">Name</label>
       <input id="name" name="name" type="text" required autocomplete="name" />
 
@@ -51,38 +50,38 @@
       <label for="message">Message</label>
       <textarea id="message" name="message" required></textarea>
 
-      <!-- Honeypot: bots may fill this; real users won't see it -->
-      <label class="hidden" aria-hidden="true"><input name="website" type="text" tabindex="-1" autocomplete="off" /></label>
-
-      <div style="display:flex;gap:.75rem;align-items:center">
-        <button type="submit" id="sendBtn">Send Message</button>
-        <div id="spinner" class="hidden" aria-hidden="true">Sending…</div>
-      </div>
-
+      <button type="submit" id="sendBtn">Send Message</button>
       <div id="status" class="status" role="status" aria-live="polite"></div>
     </form>
-
-    <p class="small">If FormSubmit blocks or spam becomes an issue, consider a lightweight serverless function (Vercel/Netlify) to send mail via an API key stored securely.</p>
   </main>
 
   <script>
-    (function(){
-      const form = document.getElementById('contactForm');
-      const sendBtn = document.getElementById('sendBtn');
-      const spinner = document.getElementById('spinner');
-      const status = document.getElementById('status');
+    const form = document.getElementById('contactForm');
+    const status = document.getElementById('status');
+    const sendBtn = document.getElementById('sendBtn');
 
-      form.addEventListener('submit', (e) => {
-        // Show sending state then allow normal form submission to FormSubmit.co
-        sendBtn.disabled = true;
-        spinner.classList.remove('hidden');
-        status.textContent = '';
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      sendBtn.disabled = true;
+      status.textContent = "Sending…";
 
-        // Let the browser submit the form normally. If you want a mailto fallback here,
-        // you'd need to preventDefault() and open mailto when fetch fails — but FormSubmit
-        // typically handles direct POSTs for free.
+      const data = Object.fromEntries(new FormData(form).entries());
+
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
       });
-    })();
+
+      if (res.ok) {
+        status.textContent = "Your message has been sent.";
+        form.reset();
+      } else {
+        status.textContent = "There was an issue sending your message.";
+      }
+
+      sendBtn.disabled = false;
+    });
   </script>
 </body>
 </html>
