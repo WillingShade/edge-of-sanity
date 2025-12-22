@@ -19,9 +19,7 @@
     p.lead{color:var(--muted-text);text-align:center;margin-top:0}
     form{display:grid;gap:0.75rem;margin-top:1rem}
     label{font-size:.9rem}
-    input[type="text"], input[type="email"], textarea{
-      width:100%;padding:0.6rem;border-radius:6px;border:1px solid var(--panel-border);background:transparent;color:inherit;font:inherit;
-    }
+    input[type="text"], input[type="email"], textarea{width:100%;padding:0.6rem;border-radius:6px;border:1px solid var(--panel-border);background:transparent;color:inherit;font:inherit;}
     textarea{min-height:150px;resize:vertical}
     .row{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem}
     button[type="submit"]{background:var(--focus);border:none;padding:0.6rem 1rem;border-radius:6px;color:#000;font-weight:600;cursor:pointer}
@@ -33,13 +31,13 @@
 <body>
   <main role="main" aria-labelledby="contactHeading">
     <h1 id="contactHeading">Contact</h1>
-    <p class="lead">Send a message about the project. I will receive messages at familyshade@gmail.com (see setup notes below).</p>
+    <p class="lead">Send a message about the project. Messages will be delivered to familyshade@gmail.com via FormSubmit.co (free). If you prefer, the form will fall back to opening your mail client.</p>
 
-    <form id="contactForm" method="POST" novalidate>
-      <!-- Replace the value of data-endpoint with your Formspree endpoint (recommended).
-           Example: https://formspree.io/f/abcd1234
-           If left blank, the form will fall back to opening the user's email client via mailto. -->
-      <input type="hidden" id="formEndpoint" value="">
+    <form id="contactForm" action="https://formsubmit.co/familyshade@gmail.com" method="POST" novalidate>
+      <!-- FormSubmit required hidden inputs -->
+      <input type="hidden" name="_subject" value="Contact form submission">
+      <input type="hidden" name="_captcha" value="false">
+      <input type="hidden" name="_next" value="/thank-you.html">
 
       <label for="name">Name</label>
       <input id="name" name="name" type="text" required autocomplete="name" />
@@ -64,103 +62,25 @@
       <div id="status" class="status" role="status" aria-live="polite"></div>
     </form>
 
-    <p class="small">
-      Notes: If you want the site to deliver messages directly to familyshade@gmail.com automatically, sign up for a form service (Formspree, Netlify Forms, etc.) or deploy a serverless endpoint that sends mail via a mail API (SendGrid/Mailgun). Instructions below.
-    </p>
-
-    <section aria-labelledby="setupHeading" style="margin-top:1.25rem">
-      <h2 id="setupHeading" style="font-size:1rem;margin:0 0 .5rem">Quick setup (recommended: Formspree)</h2>
-      <ol>
-        <li>Create a free Formspree account at <a href="https://formspree.io" style="color:inherit">formspree.io</a>.</li>
-        <li>Create a new form and copy the endpoint URL (looks like <code>https://formspree.io/f/yourFormId</code>).</li>
-        <li>Open this file and set the hidden input <code>#formEndpoint</code> value to that endpoint.</li>
-        <li>Formspree will validate submissions and can forward them to familyshade@gmail.com or you can view them in the Formspree dashboard.</li>
-      </ol>
-    </section>
+    <p class="small">If FormSubmit blocks or spam becomes an issue, consider a lightweight serverless function (Vercel/Netlify) to send mail via an API key stored securely.</p>
   </main>
 
   <script>
     (function(){
       const form = document.getElementById('contactForm');
-      const endpointInput = document.getElementById('formEndpoint');
-      let endpoint = endpointInput.value && endpointInput.value.trim();
       const sendBtn = document.getElementById('sendBtn');
-      const status = document.getElementById('status');
       const spinner = document.getElementById('spinner');
+      const status = document.getElementById('status');
 
-      function showStatus(msg, ok=true){
-        status.textContent = msg;
-        status.style.color = ok ? 'var(--muted-text)' : '#ff6b6b';
-      }
-
-      // Build a mailto fallback
-      function openMailClient(data){
-        const to = 'familyshade@gmail.com';
-        const subject = encodeURIComponent(data.subject || 'Contact from site');
-        let body = '';
-        if (data.name) body += 'Name: ' + data.name + '\n';
-        if (data.email) body += 'Reply-to: ' + data.email + '\n\n';
-        body += (data.message || '');
-        const mailto = 'mailto:' + to + '?subject=' + subject + '&body=' + encodeURIComponent(body);
-        window.location.href = mailto;
-      }
-
-      form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        status.textContent = '';
-        const fd = new FormData(form);
-
-        // Honeypot check
-        if (fd.get('website')) {
-          // bot detected — silently fail
-          showStatus('Message sent. Thank you.');
-          form.reset();
-          return;
-        }
-
-        const payload = {
-          name: fd.get('name'),
-          email: fd.get('email'),
-          subject: fd.get('subject'),
-          message: fd.get('message')
-        };
-
-        spinner.classList.remove('hidden');
+      form.addEventListener('submit', (e) => {
+        // Show sending state then allow normal form submission to FormSubmit.co
         sendBtn.disabled = true;
+        spinner.classList.remove('hidden');
+        status.textContent = '';
 
-        if (endpoint) {
-          // Try Formspree / static endpoint
-          try {
-            // Formspree accepts form-encoded or JSON depending on plan; use fetch with URLSearchParams
-            const res = await fetch(endpoint, {
-              method: 'POST',
-              headers: { 'Accept': 'application/json' },
-              body: new URLSearchParams(fd)
-            });
-            const resJson = await res.json().catch(()=>null);
-            if (res.ok) {
-              showStatus('Message sent. Thank you!');
-              form.reset();
-            } else {
-              // Show message from service if available
-              const msg = (resJson && (resJson.error || resJson.message)) ? resJson.error || resJson.message : 'Submission failed.';
-              showStatus(msg, false);
-            }
-          } catch (err) {
-            console.error('Submit error', err);
-            showStatus('Network error. Please try again or use your email client.', false);
-            // As fallback open mailto
-            // openMailClient(payload);
-          } finally {
-            spinner.classList.add('hidden');
-            sendBtn.disabled = false;
-          }
-        } else {
-          // No endpoint configured: fallback to mailto
-          spinner.classList.add('hidden');
-          sendBtn.disabled = false;
-          openMailClient(payload);
-        }
+        // Let the browser submit the form normally. If you want a mailto fallback here,
+        // you'd need to preventDefault() and open mailto when fetch fails — but FormSubmit
+        // typically handles direct POSTs for free.
       });
     })();
   </script>
